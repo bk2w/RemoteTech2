@@ -71,6 +71,10 @@ namespace RemoteTech
 
         private Backup mBackup;
         private GUIStyle mTextStyle;
+        private GUIStyle mGreenTextStyle;
+        private GUIStyle mRedTextStyle;
+        private GUIStyle mTargetTextStyle;
+        private bool mDisplayRoute;
 
         static TimeQuadrantPatcher()
         {
@@ -157,6 +161,21 @@ namespace RemoteTech
             mTextStyle = new GUIStyle(text.textStyle);
             mTextStyle.fontSize = (int)(text.textSize * ScreenSafeUI.PixelRatio);
 
+            mGreenTextStyle = new GUIStyle(mTextStyle);
+            mGreenTextStyle.normal.textColor = Color.green;
+            mGreenTextStyle.alignment = TextAnchor.LowerRight;
+
+            mRedTextStyle = new GUIStyle(mTextStyle);
+            mRedTextStyle.normal.textColor = Color.red;
+            mRedTextStyle.alignment = TextAnchor.LowerRight;
+
+            mTargetTextStyle = new GUIStyle(mTextStyle);
+            mTargetTextStyle.normal.textColor = Color.green;
+            mTargetTextStyle.alignment = TextAnchor.LowerLeft;
+
+
+            mDisplayRoute = false;
+
             RenderingManager.AddToPostDrawQueue(0, Draw);
         }
 
@@ -204,6 +223,105 @@ namespace RemoteTech
             catch (Exception) { }
         }
 
+        private void DrawSignalRoute()
+        {
+            float scale = ScreenSafeUI.VerticalRatio * 900.0f / Screen.height;
+            Vector2 screenCoord = ScreenSafeUI.referenceCam.WorldToScreenPoint(mBackup.TimeQuadrant.timeQuadrantTab.transform.position);
+
+            float distanceWidth = 80;
+            float antennaWidth = 40;
+            float targetWidth = 250;
+            float areaWidth = distanceWidth + antennaWidth + antennaWidth + targetWidth;
+            float lineHeight = 20;
+
+            var satellite = RTCore.Instance.Satellites[FlightGlobals.ActiveVessel];
+            var source = satellite as ISatellite;
+            NetworkRoute<ISatellite> connection;
+
+            // If there are no connections, or an infinite delay connection, examine the LastConnection
+            // other wise use the currently shortest connection
+            if (RTCore.Instance.Network[satellite].Count == 0 ||
+                Double.IsPositiveInfinity(RTCore.Instance.Network[satellite][0].Delay))
+                connection = RTCore.Instance.Network.LastConnection(satellite);
+            else
+                connection = RTCore.Instance.Network[satellite][0];
+
+            if(connection == null)
+                GUILayout.BeginArea(new Rect(5.0f / scale, Screen.height - screenCoord.y + 38.0f / scale, areaWidth, lineHeight * 2));
+            else
+                GUILayout.BeginArea(new Rect(5.0f / scale, Screen.height - screenCoord.y + 38.0f / scale, areaWidth, lineHeight * (connection.Links.Count + 1)));
+
+            GUILayout.BeginVertical();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Distance", mGreenTextStyle,  GUILayout.Width(distanceWidth));
+            GUILayout.Label("TX",       mGreenTextStyle,  GUILayout.Width(antennaWidth));
+            GUILayout.Label("RX",       mGreenTextStyle,  GUILayout.Width(antennaWidth));
+            GUILayout.Space(10);
+            GUILayout.Label("Target",   mTargetTextStyle, GUILayout.Width(targetWidth));
+            GUILayout.EndHorizontal();
+
+            if (connection != null && connection.Links.Count > 0)
+            {
+                foreach (var link in connection.Links)
+                {
+                    GUILayout.BeginHorizontal();
+
+                    // Distance
+                    if (source.DistanceTo(link.Target) > Math.Min(link.Transmitters.Max(a => (a.Omni != 0) ? a.Omni : a.Dish), 
+                        link.Receivers.Max(a => (a.Omni != 0) ? a.Omni : a.Dish)))
+                        GUILayout.Label(RTUtil.FormatSI(source.DistanceTo(link.Target), "m"),   mRedTextStyle, GUILayout.Width(distanceWidth));
+                    else
+                        GUILayout.Label(RTUtil.FormatSI(source.DistanceTo(link.Target), "m"), mGreenTextStyle, GUILayout.Width(distanceWidth));
+
+                    // Transmitter status
+                    // TODO: rework for non-Standard range models
+                    if (!source.Antennas.Any(a => a.Powered && a.Activated))
+                        GUILayout.Label("OFF",  mRedTextStyle, GUILayout.Width(antennaWidth));
+                    else if (link.Transmitters.Max(a => (a.Omni != 0) ? a.Omni : a.Dish) < source.DistanceTo(link.Target))
+                        GUILayout.Label("RNG",  mRedTextStyle, GUILayout.Width(antennaWidth));
+                    else if (!source.HasLineOfSightWith(link.Target))
+                        GUILayout.Label("LOS",  mRedTextStyle, GUILayout.Width(antennaWidth));
+                    else if (!link.Transmitters.Any(a => RangeModelExtensions.IsTargeting(a, link.Target, source)))
+                        GUILayout.Label("AIM",  mRedTextStyle, GUILayout.Width(antennaWidth));
+                    else
+                        GUILayout.Label("OK", mGreenTextStyle, GUILayout.Width(antennaWidth));
+
+                    // Receiver status
+                    // TODO: rework for non-Standard range models
+                    if (!link.Target.Antennas.Any(a => a.Powered && a.Activated))
+                        GUILayout.Label("OFF",  mRedTextStyle, GUILayout.Width(antennaWidth));
+                    else if (link.Receivers.Max(a => (a.Omni != 0) ? a.Omni : a.Dish) < link.Target.DistanceTo(source))
+                        GUILayout.Label("RNG",  mRedTextStyle, GUILayout.Width(antennaWidth));
+                    else if (!link.Target.HasLineOfSightWith(source))
+                        GUILayout.Label("LOS",  mRedTextStyle, GUILayout.Width(antennaWidth));
+                    else if (!link.Receivers.Any(a => RangeModelExtensions.IsTargeting(a, source, link.Target)))
+                        GUILayout.Label("AIM",  mRedTextStyle, GUILayout.Width(antennaWidth));
+                    else
+                        GUILayout.Label("OK", mGreenTextStyle, GUILayout.Width(antennaWidth));
+
+                    GUILayout.Space(10);
+
+                    // Target of link
+                    GUILayout.Label(link.Target.Name, mTargetTextStyle, GUILayout.Width(targetWidth));
+
+                    source = link.Target;
+                    GUILayout.EndHorizontal();
+                }
+            }
+            else
+            {
+                // No connection information available
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("No Connection Information", mGreenTextStyle, GUILayout.Width(areaWidth));
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.EndVertical();
+            GUILayout.EndArea();
+        }
+
         public void Draw()
         {
             if (mBackup != null)
@@ -212,7 +330,10 @@ namespace RemoteTech
                 Vector2 screenCoord = ScreenSafeUI.referenceCam.WorldToScreenPoint(mBackup.TimeQuadrant.timeQuadrantTab.transform.position);
                 Rect screenPos = new Rect(5.0f / scale, Screen.height - screenCoord.y + 14.0f / scale, 50.0f / scale, 20.0f / scale);
 
-                GUI.Label(screenPos, DisplayText, mTextStyle);
+                if (GUI.Button(screenPos, DisplayText, mTextStyle))
+                {
+                    mDisplayRoute = !mDisplayRoute;
+                }
 
                 screenPos.width = 21.0f / scale;
                 screenPos.x += 101 / scale;
@@ -224,6 +345,9 @@ namespace RemoteTech
                     satellite.SignalProcessor.FlightComputer.Window.Show();
                     //ScreenMessages.PostScreenMessage(new ScreenMessage("[FlightComputer]: Not yet implemented!", 4.0f, ScreenMessageStyle.UPPER_LEFT));
                 }
+
+                if (mDisplayRoute)
+                    DrawSignalRoute();
             }
         }
     }

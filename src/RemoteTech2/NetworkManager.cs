@@ -47,6 +47,14 @@ namespace RemoteTech
             }
         }
 
+        private Dictionary<ISatellite, NetworkRoute<ISatellite>> mLastConnectionCache = new Dictionary<ISatellite, NetworkRoute<ISatellite>>();
+        public NetworkRoute<ISatellite> LastConnection(ISatellite sat) {
+
+            if (sat == null) return null;
+            return mLastConnectionCache.ContainsKey(sat) ? mLastConnectionCache[sat] : null;
+        }
+
+
         private const int REFRESH_TICKS = 50;
 
         private int mTick;
@@ -103,6 +111,14 @@ namespace RemoteTech
             }
             mConnectionCache[start] = paths.Where(p => p.Exists).ToList();
             mConnectionCache[start].Sort((a, b) => a.Delay.CompareTo(b.Delay));
+
+            // If theres a valid path, set it aside for diagnostics
+            if (mConnectionCache[start].Count > 0)
+            {
+//                Debug.Log(String.Format("Saving a connection from {0} to {1} of {2} links", start.Name, mConnectionCache[start][0].Links, mConnectionCache[start][0].Links.Count));
+                mLastConnectionCache[start] = mConnectionCache[start][0];
+            }
+
             start.OnConnectionRefresh(this[start]);
         }
 

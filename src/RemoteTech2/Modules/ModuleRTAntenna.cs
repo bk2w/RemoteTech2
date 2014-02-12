@@ -165,7 +165,7 @@ namespace RemoteTech
             if (RTCore.Instance != null)
             {
                 var satellite = RTCore.Instance.Network[Guid];
-                bool route_home = RTCore.Instance.Network[satellite].Any(r => r.Links[0].Interfaces.Contains(this) && RTCore.Instance.Network.GroundStations.ContainsKey(r.Goal.Guid));
+                bool route_home = RTCore.Instance.Network[satellite].Any(r => r.Links[0].Transmitters.Contains(this) && RTCore.Instance.Network.GroundStations.ContainsKey(r.Goal.Guid));
                 if (mTransmitter == null && route_home)
                 {
                     AddTransmitter();

@@ -14,8 +14,8 @@ namespace RemoteTech
         {
             var omni_a = sat_a.Antennas.Where(a => a.Omni > 0);
             var omni_b = sat_b.Antennas.Where(b => b.Omni > 0);
-            var dish_a = sat_a.Antennas.Where(a => a.Dish > 0 && (a.IsTargetingDirectly(sat_b) || a.IsTargetingActiveVessel(sat_b) || a.IsTargetingPlanet(sat_b, sat_a)));
-            var dish_b = sat_b.Antennas.Where(b => b.Dish > 0 && (b.IsTargetingDirectly(sat_a) || b.IsTargetingActiveVessel(sat_a) || b.IsTargetingPlanet(sat_a, sat_b)));
+            var dish_a = sat_a.Antennas.Where(a => a.Dish > 0 && a.IsTargeting(sat_b, sat_a));
+            var dish_b = sat_b.Antennas.Where(b => b.Dish > 0 && b.IsTargeting(sat_a, sat_b));
 
             double max_omni_a = omni_a.Any() ? omni_a.Max(a => a.Omni) : 0.0;
             double max_omni_b = omni_b.Any() ? omni_b.Max(b => b.Omni) : 0.0;
@@ -47,10 +47,12 @@ namespace RemoteTech
 
             if (conn_a != null && conn_b != null)
             {
-                var interfaces = omni_a.Concat(dish_a).ToList();
+                var transmitters = omni_a.Concat(dish_a).ToList();
+                var receivers    = omni_b.Concat(dish_b).ToList();
                 var type = LinkType.Omni;
+                var cost = RTSettings.Instance.EnableSignalDelay ? distance / RTSettings.Instance.SpeedOfLight : 0.0;
                 if (dish_a.Contains(conn_a) || dish_b.Contains(conn_b)) type = LinkType.Dish;
-                return new NetworkLink<ISatellite>(sat_b, interfaces, type);
+                return new NetworkLink<ISatellite>(sat_b, transmitters, receivers, type, cost);
             }
 
             return null;

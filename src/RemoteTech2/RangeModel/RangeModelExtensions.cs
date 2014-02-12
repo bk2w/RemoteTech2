@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace RemoteTech
 {
@@ -31,6 +32,11 @@ namespace RemoteTech
             var dir_b = (sat_b.Position - sat_a.Position);
             if (Vector3d.Dot(dir_cb.normalized, dir_b.normalized) >= a.Radians) return true;
             return false;
+        }
+
+        public static bool IsTargeting(this IAntenna a, ISatellite sat_b, ISatellite sat_a)
+        {
+            return (a.Omni > 0) || IsTargetingDirectly(a, sat_b) || IsTargetingActiveVessel(a, sat_b) || IsTargetingPlanet(a, sat_b, sat_a);
         }
 
         public static double DistanceTo(this ISatellite a, ISatellite b)

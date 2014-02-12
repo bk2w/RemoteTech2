@@ -15,10 +15,9 @@ namespace RemoteTech
             var nodeMap = new Dictionary<T, Node<NetworkLink<T>>>();
             var priorityQueue = new PriorityQueue<Node<NetworkLink<T>>>();
 
-            var nStart = new Node<NetworkLink<T>>(new NetworkLink<T>(start, null, LinkType.None), 0, heuristicFunction.Invoke(start, goal), null, false);
+            var nStart = new Node<NetworkLink<T>>(new NetworkLink<T>(start, null, null, LinkType.None, heuristicFunction.Invoke(start, goal)), 0, heuristicFunction.Invoke(start, goal), null, false);
             nodeMap[start] = nStart;
             priorityQueue.Enqueue(nStart);
-            double cost = 0;
 
             while (priorityQueue.Count > 0)
             {
@@ -32,10 +31,9 @@ namespace RemoteTech
                     for (var node = current; node.From != null; node = node.From)
                     {
                         reversePath.Add(node.Item);
-                        cost += node.Cost;
                     }
                     reversePath.Reverse();
-                    return new NetworkRoute<T>(start, reversePath, cost);
+                    return new NetworkRoute<T>(start, reversePath, current.Cost);
                 }
 
                 foreach (var link in neighborsFunction.Invoke(current.Item.Target))
