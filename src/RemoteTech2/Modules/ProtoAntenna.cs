@@ -10,6 +10,7 @@ namespace RemoteTech
         public bool Powered { get; private set; }
         public bool Activated { get; set; }
         public float Consumption { get; private set; }
+        public uint PartId { get { return mProtoPart.flightID; } }
 
         public bool CanTarget { get { return Dish != -1; } }
 

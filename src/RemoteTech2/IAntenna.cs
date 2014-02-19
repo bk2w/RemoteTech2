@@ -14,6 +14,7 @@ namespace RemoteTech
         double Radians { get; }
         float Omni { get; }
         float Consumption { get; }
+        uint PartId { get; }
 
         void OnConnectionRefresh();
     }

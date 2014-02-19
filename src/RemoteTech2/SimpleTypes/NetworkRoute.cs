@@ -45,7 +45,7 @@ namespace RemoteTech
 
         public override string ToString()
         {
-            return String.Format("NetworkRoute(Route: {{0}}, Delay: {1})", 
+            return String.Format("NetworkRoute(Route: {0}, Delay: {1})", 
                 String.Join("→", Links.Select(t => t.ToString()).ToArray()),
                 Delay.ToString("F2") + "s");
         }

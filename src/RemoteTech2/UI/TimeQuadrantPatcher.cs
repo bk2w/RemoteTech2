@@ -236,7 +236,7 @@ namespace RemoteTech
 
             var satellite = RTCore.Instance.Satellites[FlightGlobals.ActiveVessel];
             var source = satellite as ISatellite;
-            NetworkRoute<ISatellite> connection;
+            NetworkRoute<ISatellite> connection = null;
 
             // If there are no connections, or an infinite delay connection, examine the LastConnection
             // other wise use the currently shortest connection
@@ -261,7 +261,7 @@ namespace RemoteTech
             GUILayout.Label("Target",   mTargetTextStyle, GUILayout.Width(targetWidth));
             GUILayout.EndHorizontal();
 
-            if (connection != null && connection.Links.Count > 0)
+            if (connection != null && connection.Links != null && connection.Links.Count > 0)
             {
                 foreach (var link in connection.Links)
                 {
@@ -328,7 +328,7 @@ namespace RemoteTech
             {
                 float scale = ScreenSafeUI.VerticalRatio * 900.0f / Screen.height;
                 Vector2 screenCoord = ScreenSafeUI.referenceCam.WorldToScreenPoint(mBackup.TimeQuadrant.timeQuadrantTab.transform.position);
-                Rect screenPos = new Rect(5.0f / scale, Screen.height - screenCoord.y + 14.0f / scale, 50.0f / scale, 20.0f / scale);
+                Rect screenPos = new Rect(5.0f / scale, Screen.height - screenCoord.y + 14.0f / scale, 100.0f / scale, 20.0f / scale);
 
                 if (GUI.Button(screenPos, DisplayText, mTextStyle))
                 {

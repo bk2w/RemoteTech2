@@ -24,6 +24,7 @@ namespace RemoteTech
         public float Omni { get { return Activated ? OmniRange * RangeMultiplier : 0.0f; } }
         public float Consumption { get { return 0.0f; } }
         public Vector3d Position { get { return vessel.GetWorldPos3D(); } }
+        public uint PartId { get { return part.flightID; } }
 
         private float RangeMultiplier { get { return RTSettings.Instance.RangeMultiplier; } }
         private bool Unlocked { get { return ResearchAndDevelopment.GetTechnologyState(TechRequired) == RDTech.State.Available || TechRequired.Equals("None"); } }

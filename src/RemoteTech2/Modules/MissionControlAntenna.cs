@@ -18,6 +18,7 @@ namespace RemoteTech
         Guid IAntenna.Target { get { return Guid.Empty; } set { return; } }
         float IAntenna.Dish { get { return 0.0f; } }
         double IAntenna.Radians { get { return 1.0; } }
+        uint IAntenna.PartId { get { return 0; }}
 
         public void OnConnectionRefresh() { }
 
